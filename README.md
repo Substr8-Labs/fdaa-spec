@@ -9,7 +9,7 @@
 
 ## Overview
 
-This repository contains the specification and research for **File-Driven Agent Architecture (FDAA)** — a design pattern where AI agents are defined entirely through human-readable markdown files.
+This repository contains the research and specification for **File-Driven Agent Architecture (FDAA)** — a design pattern where AI agents are defined entirely through human-readable markdown files.
 
 > **The intelligence is in the model. The identity is in the files.**
 
@@ -32,36 +32,38 @@ Instead of embedding agent configuration in code, databases, or fine-tuned weigh
 - **90% cost reduction** via prompt caching
 - **100% portability** across LLM providers
 
-## Documents
+## Documentation
 
-### Core
+📄 **[WHITEPAPER.md](./WHITEPAPER.md)** — Full specification and research (~9,000 words)
 
-- **[WHITEPAPER.md](./WHITEPAPER.md)** — Full specification and research (~9,000 words)
+## Core Concepts
 
-### Supporting
+### 1. Files ARE Configuration
 
-- [docs/FILE_SCHEMA.md](./docs/FILE_SCHEMA.md) — Workspace file structure
-- [docs/DECISIONS.md](./docs/DECISIONS.md) — Design decision log
-- [docs/PROTOTYPE.md](./docs/PROTOTYPE.md) — Implementation notes
+No config UI needed. Edit markdown → agent changes immediately.
 
-### Case Study
+```
+agent/
+├── IDENTITY.md  # Who it is
+├── SOUL.md      # How it thinks
+├── MEMORY.md    # What it remembers
+├── TOOLS.md     # What it can do
+└── CONTEXT.md   # Current state
+```
 
-- [RFC-001-WORKSPACE-ARCHITECTURE.md](./RFC-001-WORKSPACE-ARCHITECTURE.md) — TowerHQ implementation (AI C-Suite for founders)
+### 2. Stateless Runtime
+
+The gateway holds no state. Files provide context, LLM provides intelligence.
+
+### 3. W^X Policy (Write XOR Execute)
+
+Agents can update `MEMORY.md` but cannot modify `IDENTITY.md` or `SOUL.md`.
+
+### 4. Portable by Default
+
+Copy the folder. Move the agent. Works with any LLM provider.
 
 ## Quick Example
-
-An agent is just a folder of markdown files:
-
-```
-my_agent/
-├── IDENTITY.md       # Who the agent is
-├── SOUL.md           # How it thinks
-├── MEMORY.md         # What it remembers
-├── TOOLS.md          # What it can do
-└── CONTEXT.md        # Current state
-```
-
-Minimal implementation:
 
 ```python
 from pathlib import Path
@@ -85,39 +87,9 @@ def chat(workspace: str, message: str) -> str:
     return response.choices[0].message.content
 ```
 
-## Core Concepts
+## Security Model
 
-### 1. Files ARE Configuration
-
-No config UI needed. Edit markdown → agent changes immediately.
-
-### 2. Stateless Runtime
-
-The gateway holds no state. Files provide context, LLM provides intelligence.
-
-### 3. W^X Policy (Write XOR Execute)
-
-Agents can update `MEMORY.md` but cannot modify `IDENTITY.md` or `SOUL.md`.
-
-### 4. Tenant Isolation
-
-Every query scoped by tenant ID. No cross-tenant access possible.
-
-### 5. Prompt Caching
-
-Stable file content = cacheable system prompts = 90% cost reduction.
-
-## Scaling
-
-| Agents | Storage | Monthly Cost |
-|--------|---------|--------------|
-| 100 | 10 MB | ~$0 (free tier) |
-| 10,000 | 1 GB | ~$200 |
-| 100,000 | 10 GB | ~$500 |
-
-## Security
-
-- **W^X enforcement** — Identity files are read-only
+- **W^X enforcement** — Identity files are read-only to the agent
 - **Tenant isolation** — Query scoping prevents cross-tenant access
 - **Injection protection** — File content sanitized
 - **Drift monitoring** — Detect behavioral deviation
@@ -128,11 +100,10 @@ Stable file content = cacheable system prompts = 90% cost reduction.
 1. **Agent Interchange Format** — Standard manifest for agent portability
 2. **Cryptographic Verification** — Signed, verifiable agent state
 3. **Federated Agents** — Cross-organizational collaboration
-4. **Self-Evolving Agents** — Specification improvement with human approval
 
 ## About Substr8 Labs
 
-We build infrastructure for **provable AI agents** — systems that are transparent, auditable, and cryptographically verifiable.
+We research infrastructure for **provable AI agents** — systems that are transparent, auditable, and cryptographically verifiable.
 
 - **Website:** https://substr8labs.com
 - **GitHub:** https://github.com/Substr8-Labs
@@ -142,8 +113,6 @@ We build infrastructure for **provable AI agents** — systems that are transpar
 
 This work is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
-You are free to share and adapt this material for any purpose, with attribution.
-
 ---
 
-*Built by [Substr8 Labs](https://substr8labs.com) — Provable Agent Infrastructure*
+*Research by [Substr8 Labs](https://substr8labs.com)*
