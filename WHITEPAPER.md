@@ -4,7 +4,7 @@
 
 ---
 
-**Authors:** Rudi Sayed, Ada (Substr8 Labs)  
+**Authors:** Rudi Heydra, Ada (Substr8 Labs)  
 **Version:** 1.0  
 **Published:** February 2026  
 **License:** CC BY 4.0
