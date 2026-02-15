@@ -1,5 +1,7 @@
 # RFC-001: TowerHQ Workspace Architecture
 
+> **Note:** This RFC is a **case study** implementing the [File-Driven Agent Architecture](./WHITEPAPER.md) pattern for a specific product. For the general architecture specification, see the [WHITEPAPER.md](./WHITEPAPER.md).
+
 **Status:** Draft  
 **Authors:** Ada (CTO), Raza (CEO)  
 **Created:** 2026-02-15  
@@ -9,9 +11,9 @@
 
 ## Abstract
 
-This RFC proposes a workspace-based architecture for TowerHQ, an AI executive team platform for solo founders. The architecture enables personalized, context-aware AI personas by storing founder context in structured markdown files that are dynamically injected into LLM prompts at runtime.
+This RFC documents the implementation of File-Driven Agent Architecture for TowerHQ, an AI executive team platform for solo founders. The architecture enables personalized, context-aware AI personas by storing founder context in structured markdown files that are dynamically injected into LLM prompts at runtime.
 
-The design is inspired by OpenClaw's file-driven agent configuration pattern but adapted for multi-tenant SaaS deployment.
+This case study demonstrates how the general FDAA pattern maps to a real multi-tenant SaaS product.
 
 ---
 
