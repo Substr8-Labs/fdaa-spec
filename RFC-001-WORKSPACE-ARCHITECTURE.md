@@ -3,7 +3,7 @@
 > **Note:** This RFC is a **case study** implementing the [File-Driven Agent Architecture](./WHITEPAPER.md) pattern for a specific product. For the general architecture specification, see the [WHITEPAPER.md](./WHITEPAPER.md).
 
 **Status:** Draft  
-**Authors:** Ada (CTO), Raza (CEO)  
+**Authors:** Ada (CTO), Rudi Sayed (CEO)  
 **Created:** 2026-02-15  
 **Last Updated:** 2026-02-15  
 
