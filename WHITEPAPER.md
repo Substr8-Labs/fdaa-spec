@@ -1176,13 +1176,13 @@ As AI agents become critical infrastructure, the industry needs standards for po
 
 ## Appendix B: File Templates
 
-Complete file templates are available at:
-https://github.com/Substr8-Labs/file-driven-agent-architecture/templates/
+Complete file templates are available in the reference implementation:
+https://github.com/Substr8-Labs/fdaa-cli/tree/master/fdaa/templates.py
 
 ## Appendix C: Reference Implementation
 
-A production-ready reference implementation is available at:
-https://github.com/Substr8-Labs/fdaa-reference
+The reference implementation (CLI + API server) is available at:
+https://github.com/Substr8-Labs/fdaa-cli
 
 ---
 
