@@ -36,6 +36,8 @@ Instead of embedding agent configuration in code, databases, or fine-tuned weigh
 
 📄 **[WHITEPAPER.md](./WHITEPAPER.md)** — Full specification and research (~9,000 words)
 
+🔧 **[fdaa-cli](https://github.com/Substr8-Labs/fdaa-cli)** — Reference implementation (working code)
+
 ## Core Concepts
 
 ### 1. Files ARE Configuration
