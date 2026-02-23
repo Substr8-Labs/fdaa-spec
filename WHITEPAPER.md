@@ -5,9 +5,9 @@
 ---
 
 **Authors:** Rudi Heydra, Ada (Substr8 Labs)  
-**Version:** 1.2  
+**Version:** 1.3  
 **Published:** February 2026  
-**Updated:** February 17, 2026 (Added Skill Verification Pipeline)  
+**Updated:** February 23, 2026 (Removed unverified benchmark claims; reframed as theoretical)  
 **License:** CC BY 4.0
 
 ---
@@ -22,9 +22,7 @@ This architecture provides three critical properties missing from current agent 
 2. **Persistence** — Agent memory survives process restarts, model upgrades, and infrastructure changes
 3. **Provability** — All agent state is human-auditable, diff-able, and cryptographically verifiable
 
-Empirical research validates this approach: file-driven agents achieve **74% accuracy on memory tasks** (Letta benchmark), demonstrate **28.64% faster execution** with structured markdown, and enable **90% cost reduction** through prompt caching.
-
-We validated these claims with a reference implementation ([fdaa-cli](https://github.com/Substr8-Labs/fdaa-cli)), demonstrating that files alone can define agent identity, persist memory across sessions, enforce security policies, and produce distinctly different behaviors through simple file changes.
+We validated these properties with a reference implementation ([fdaa-cli](https://github.com/Substr8-Labs/fdaa-cli)), demonstrating that files alone can define agent identity, persist memory across sessions, enforce security policies, and produce distinctly different behaviors through simple file changes.
 
 FDAA represents a fundamental shift in how we think about agent architecture — from the agent as a configured service to the agent as a portable, inspectable document.
 
@@ -1345,56 +1343,51 @@ Future: NVIDIA ICMS and similar technologies promise petabyte-scale context.
 
 ---
 
-## 9. Research Validation
+## 9. Validation
 
-### 9.1 Letta Memory Benchmark
+### 9.1 Theoretical Advantages
 
-The [Letta framework](https://letta.com) evaluated file-based memory against specialized memory tools:
+File-based memory architectures offer several theoretical advantages over alternative approaches:
 
-| Approach | Memory Task Accuracy |
-|----------|---------------------|
-| Standard RAG | 52% |
-| Specialized memory tools | 61% |
-| **File-based persistence** | **74%** |
+**Why file-based memory should outperform RAG:**
+- Structured markdown provides semantic scaffolding that guides LLM reasoning
+- LLMs are trained on markdown-heavy corpora (GitHub, documentation)
+- Files maintain relational context between facts that chunking destroys
+- Full context injection avoids retrieval accuracy problems
 
-File-based approaches outperform because:
-- Structured markdown provides semantic scaffolding
-- LLMs are trained on markdown-heavy corpora
-- Files maintain relational context between facts
+**Why structured prompts should improve efficiency:**
+- Markdown's semantic structure (headers, lists, code blocks) provides clear organization
+- Consistent formatting reduces parsing ambiguity for the model
+- Hierarchical structure maps naturally to attention patterns
 
-### 9.2 Execution Efficiency
+*Note: Formal benchmarks comparing FDAA to RAG baselines are planned for future work.*
 
-Research on structured prompts shows:
+### 9.2 Cost Optimization via Prompt Caching
 
-| Metric | Unstructured | Structured Markdown | Improvement |
-|--------|--------------|---------------------|-------------|
-| Task completion time | Baseline | -28.64% | Faster |
-| Token consumption | Baseline | -16.58% | Cheaper |
-| Error rate | Baseline | -12.3% | More reliable |
+Modern LLM APIs support prompt caching for repeated prefixes. Because FDAA workspace files change infrequently, the system prompt is highly cacheable.
 
-Markdown's semantic structure (headers, lists, code blocks) guides LLM reasoning more effectively than prose.
+Anthropic's [prompt caching documentation](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching) reports:
+- Up to 90% cost reduction for cached prompts
+- Significant latency improvements for repeated contexts
 
-### 9.3 Cost Analysis
+File-driven architecture naturally benefits from this because:
+- Identity files (SOUL.md, IDENTITY.md) rarely change
+- System prompt remains stable across conversations
+- Only MEMORY.md and user messages vary frequently
 
-Prompt caching with file-driven architecture:
+### 9.3 Portability by Design
 
-| Scenario | Without Caching | With Caching | Savings |
-|----------|-----------------|--------------|---------|
-| Repeated conversations | $0.015/req | $0.003/req | 80% |
-| Same-day sessions | $0.015/req | $0.002/req | 87% |
-| High-frequency agents | $0.015/req | $0.0015/req | 90% |
+FDAA's file-based approach enables portability as a design property:
 
-### 9.4 Portability Validation
+| Migration Path | Expected Outcome | Rationale |
+|----------------|------------------|-----------|
+| Provider A → Provider B | High compatibility | Files are model-agnostic markdown |
+| Cloud → Local | High compatibility | No vendor-specific APIs in files |
+| Production → Development | Full compatibility | Git clone preserves all state |
 
-We tested agent portability across providers:
+*Note: Actual migration success rates depend on model capability parity and tool availability.*
 
-| Migration | Success Rate | Notes |
-|-----------|--------------|-------|
-| OpenAI → Anthropic | 100% | Files work unchanged |
-| Cloud → Local (Ollama) | 95% | Minor capability gaps |
-| Production → Development | 100% | Git clone + run |
-
-### 9.5 Reference Implementation Validation
+### 9.4 Reference Implementation Validation
 
 To validate the core hypothesis, we built [fdaa-cli](https://github.com/Substr8-Labs/fdaa-cli), a reference implementation in ~560 lines of Python, and conducted systematic tests.
 
