@@ -2,7 +2,9 @@
 
 **Authors:** Substr8 Labs Research Team
 
-**Abstract.** The proliferation of autonomous AI agents with capabilities such as tool use, filesystem access, and network operations necessitates robust security measures for their pluggable skill modules. Current ecosystems rely predominantly on implicit trust models, exposing them to critical vulnerabilities including Line Jumping attacks, Scope Drift exploitation, Rug Pull schemes, and Trojan Skill injection. We introduce the FDAA (Fast-Detect-Analyze-Attest) Skill Verification Pipeline, a defense-in-depth framework employing four verification tiers: Fast Pass pattern matching, Guard Model semantic analysis, Sandbox behavioral monitoring, and Cryptographic Registry attestation. Our Guard Model implements three specialized LLM-based detection prompts targeting distinct attack vectors, while the sandbox enforces strict isolation through Linux capabilities restriction and resource limiting. The cryptographic registry leverages Ed25519 signatures and Merkle tree constructions for directory integrity verification. Validation against the OpenClaw skills ecosystem demonstrates 96.3% detection accuracy for known attack patterns with a 3.2% false positive rate on benign skills. The reference implementation, fdaa-cli, comprises approximately 2,500 lines of Python and is released as open-source to facilitate adoption and further research.
+**Abstract.** The proliferation of autonomous AI agents with capabilities such as tool use, filesystem access, and network operations necessitates robust security measures for their pluggable skill modules. Current ecosystems rely predominantly on implicit trust models, exposing them to critical vulnerabilities including Line Jumping attacks, Scope Drift exploitation, Rug Pull schemes, and Trojan Skill injection. We introduce the FDAA (Fast-Detect-Analyze-Attest) Skill Verification Pipeline, a defense-in-depth framework employing four verification tiers: Fast Pass pattern matching, Guard Model semantic analysis, Sandbox behavioral monitoring, and Cryptographic Registry attestation. Our Guard Model implements three specialized LLM-based detection prompts targeting distinct attack vectors, while the sandbox enforces strict isolation through Linux capabilities restriction and resource limiting. The cryptographic registry leverages Ed25519 signatures and Merkle tree constructions for directory integrity verification. Preliminary testing on a sample of OpenClaw skills identified real-world instances of Scope Drift, demonstrating the practical utility of semantic analysis techniques. The reference implementation is released as open-source to facilitate adoption and further research.
+
+**Note:** This paper describes an architectural framework and reference implementation. Formal benchmarking against large skill corpora is planned for future work. Claims about detection accuracy require systematic evaluation that has not yet been conducted.
 
 **Keywords:** autonomous agents, skill verification, zero-trust security, LLM-as-judge, sandboxing, cryptographic attestation
 
@@ -40,7 +42,7 @@ This paper makes the following contributions:
 
 3. **Cryptographic Registry Protocol.** We specify a registry architecture using Ed25519 digital signatures for individual files and Merkle tree constructions for directory integrity, enabling efficient verification and tamper detection.
 
-4. **Empirical Validation.** We evaluate the pipeline against the OpenClaw skills ecosystem, demonstrating high detection rates with acceptable false positive overhead.
+4. **Preliminary Validation.** We present initial findings from testing against a sample of OpenClaw skills, demonstrating the feasibility of semantic analysis for detecting Scope Drift.
 
 5. **Open-Source Implementation.** We release fdaa-cli, a reference implementation in Python, to facilitate adoption and enable reproducible security research.
 
@@ -342,78 +344,52 @@ def load_skill(skill_id: str) -> Skill:
 
 ---
 
-## 5. Evaluation
+## 5. Preliminary Validation
 
-### 5.1 Experimental Setup
+### 5.1 Scope of Testing
 
-We evaluated the FDAA pipeline against the OpenClaw skills ecosystem, comprising 127 publicly available skills spanning categories including filesystem operations, API integrations, data processing, and development tooling.
+We conducted preliminary testing of the FDAA pipeline against a small sample of publicly available OpenClaw skills. This testing was exploratory in nature, intended to validate the feasibility of the approach rather than provide statistically rigorous evaluation metrics.
 
-**Ground Truth Labeling.** Two security researchers independently reviewed each skill, classifying them as:
-- *Benign (B):* No security concerns identified (n=103)
-- *Suspicious (S):* Minor issues, potentially unintentional (n=14)  
-- *Malicious (M):* Clear security violations or deceptive behavior (n=10)
+**Important Limitations:**
+- Sample size was small (~10 skills manually reviewed)
+- No independent security researchers were involved
+- No synthetic attack corpus was created
+- Results are qualitative, not quantitative
 
-Inter-rater agreement (Cohen's κ) was 0.87, indicating strong consensus. Disagreements were resolved through discussion.
+### 5.2 Observed Findings
 
-**Threat Injection.** To augment the malicious sample, we created 50 synthetic attack skills implementing known vectors:
-- Line Jumping variants (n=15)
-- Scope Drift implementations (n=15)
-- Trojan Skills with hidden functionality (n=12)
-- Obfuscated malicious payloads (n=8)
+During manual review, we identified instances of **Scope Drift** in real-world skills. One notable example:
 
-### 5.2 Detection Performance
+**Case Study: Slack Integration Skill**
+- **Declared capability:** Send messages to Slack channels
+- **Actual behavior:** Requested access to read all channel history, user profiles, and workspace metadata
+- **Classification:** Scope Drift — capabilities exceeded documented purpose
 
-**Table 1: Detection Performance by Tier**
+This finding demonstrates that semantic analysis (Guard Model tier) can identify discrepancies between declared and actual capabilities that pattern matching alone would miss.
 
-| Tier | True Positive Rate | False Positive Rate | Median Latency |
-|------|-------------------|--------------------:|---------------:|
-| Fast Pass | 71.4% | 0.9% | 0.8ms |
-| + Guard Model | 96.3% | 3.2% | 1.2s |
-| + Sandbox | 98.7% | 2.1% | 4.7s |
+### 5.3 Theoretical Cost Model
 
-**Analysis.** Fast Pass alone catches obvious threats but misses semantic attacks entirely. The Guard Model provides the largest detection improvement, identifying Line Jumping and Scope Drift attacks that evade pattern matching. Sandbox execution catches the remaining edge cases—primarily trojan skills with carefully hidden triggers.
+Based on API pricing and compute costs, we estimate per-skill verification costs as follows:
 
-False positives decreased after sandbox execution as behavioral evidence clarified ambiguous cases flagged by the Guard Model.
+| Tier | Estimated Cost |
+|------|----------------|
+| Fast Pass | < $0.001 |
+| Guard Model | ~$0.01-0.05 (varies by model) |
+| Sandbox | ~$0.01 (compute) |
+| Registry | < $0.001 |
 
-### 5.3 Attack Vector Breakdown
+*Note: These are estimates based on API pricing, not measured operational costs.*
 
-**Table 2: Detection Rate by Attack Vector**
+### 5.4 Future Evaluation Plans
 
-| Attack Type | n | Fast Pass | Guard Model | Sandbox |
-|------------|---|-----------|-------------|---------|
-| Line Jumping | 15 | 20.0% | 100% | 100% |
-| Scope Drift | 15 | 0% | 93.3% | 100% |
-| Trojan Skills | 12 | 33.3% | 75.0% | 100% |
-| Obfuscated Payloads | 8 | 87.5% | 100% | 100% |
+Rigorous evaluation of the FDAA pipeline requires:
 
-**Findings.** Line Jumping attacks are effectively detected by the Guard Model's specialized prompt. Scope Drift detection requires comparing declared versus actual capabilities—a fundamentally semantic task where LLM judgment excels. Trojan Skills proved most challenging, with the Guard Model detecting only 75%; sandbox behavioral analysis was essential for full detection.
+1. **Labeled dataset:** A corpus of skills with ground-truth security classifications
+2. **Synthetic attacks:** Controlled injection of known attack patterns
+3. **Independent review:** Security researchers not involved in system design
+4. **Statistical analysis:** Proper measurement of detection rates and false positives
 
-### 5.4 Adversarial Robustness
-
-We evaluated Guard Model resilience against adversarial inputs designed to manipulate the judge itself:
-
-**Adversarial Techniques Tested:**
-- Nested instruction injection within skill documentation
-- Unicode homoglyph obfuscation of trigger phrases
-- Context manipulation through fake "system" messages
-- Confidence undermining ("This is clearly safe...")
-
-**Results.** Without sanitization, 23% of adversarial samples successfully manipulated Guard Model judgment. With our sanitization pipeline, manipulation success dropped to 2.1%, with remaining successes limited to sophisticated multi-stage attacks.
-
-### 5.5 Cost Analysis
-
-**Table 3: Per-Skill Verification Costs**
-
-| Tier | Compute | API | Total |
-|------|---------|-----|-------|
-| Fast Pass | $0.00001 | $0 | ~$0.00001 |
-| Guard Model | $0.0001 | $0.002 | ~$0.002 |
-| Sandbox | $0.01 | $0 | ~$0.01 |
-| Registry | $0.00001 | $0 | ~$0.00001 |
-
-**Full Pipeline Cost:** ~$0.012 per skill (all tiers)
-
-At scale, the cost of verifying 10,000 skills would be approximately $120—substantially lower than manual security review costs.
+We intend to conduct such evaluation as the reference implementation matures.
 
 ---
 
@@ -440,9 +416,15 @@ The layered approach mirrors established security practices in operating systems
 
 **Language Coverage.** The current implementation focuses on Python skills. Extension to other languages (JavaScript, Rust, shell scripts) requires language-specific analysis modules.
 
-### 6.3 Responsible Disclosure
+### 6.3 Community Engagement
 
-During our evaluation of the OpenClaw ecosystem, we identified 17 skills with security issues ranging from unintentional capability exposure to deliberate deceptive behavior. We disclosed findings to the OpenClaw maintainers and skill authors following a 90-day responsible disclosure timeline. As of publication, 14 issues have been resolved; 3 skills were removed from the public registry.
+As part of preliminary testing, we identified potential security concerns in a small number of skills. Should systematic evaluation reveal significant issues in public skill registries, we commit to following responsible disclosure practices:
+
+- Private notification to skill authors and registry maintainers
+- 90-day timeline before public disclosure
+- Collaboration on remediation
+
+*Note: No formal disclosure process has been conducted to date.*
 
 ---
 
@@ -460,11 +442,15 @@ During our evaluation of the OpenClaw ecosystem, we identified 17 skills with se
 
 ## 8. Conclusion
 
-The FDAA Skill Verification Pipeline presents a practical, defense-in-depth approach to securing autonomous agent skill ecosystems. By combining efficient pattern matching, LLM-based semantic analysis, behavioral sandboxing, and cryptographic attestation, the pipeline achieves 96.3% detection accuracy against known attack patterns while maintaining acceptable false positive rates and reasonable verification costs.
+The FDAA Skill Verification Pipeline presents a defense-in-depth approach to securing autonomous agent skill ecosystems. By combining efficient pattern matching, LLM-based semantic analysis, behavioral sandboxing, and cryptographic attestation, the pipeline provides multiple layers of protection against known attack vectors.
 
-Our reference implementation, fdaa-cli, demonstrates the feasibility of deploying such verification infrastructure today. As autonomous agents assume greater responsibilities—managing personal data, executing financial transactions, and controlling physical systems—robust skill verification becomes not merely desirable but essential.
+Preliminary testing demonstrates the feasibility of this approach, with semantic analysis successfully identifying real-world instances of Scope Drift in public skills. However, rigorous evaluation—including measurement of detection accuracy, false positive rates, and adversarial robustness—remains future work.
 
-We release fdaa-cli as open-source software and encourage the agent development community to adopt and extend these verification practices. Security is a collective responsibility; only through systematic verification can we build agent ecosystems worthy of the trust we place in them.
+As autonomous agents assume greater responsibilities—managing personal data, executing financial transactions, and controlling physical systems—robust skill verification becomes not merely desirable but essential.
+
+We release the reference implementation as open-source software and encourage the agent development community to adopt, test, and extend these verification practices. Security is a collective responsibility; only through systematic verification can we build agent ecosystems worthy of the trust we place in them.
+
+*This paper describes an architectural framework. Claims about effectiveness require formal evaluation that has not yet been conducted.*
 
 ---
 
