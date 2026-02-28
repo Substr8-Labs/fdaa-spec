@@ -5,9 +5,9 @@
 ---
 
 **Authors:** Rudi Heydra, Ada (Substr8 Labs)  
-**Version:** 1.3  
+**Version:** 1.4  
 **Published:** February 2026  
-**Updated:** February 23, 2026 (Removed unverified benchmark claims; reframed as theoretical)  
+**Updated:** February 28, 2026 (Added Appendix D: Hybrid Retrieval Lessons from GAM v3a.12)  
 **License:** CC BY 4.0
 
 ---
@@ -1662,6 +1662,100 @@ https://github.com/Substr8-Labs/fdaa-cli/tree/master/fdaa/templates.py
 
 The reference implementation (CLI + API server) is available at:
 https://github.com/Substr8-Labs/fdaa-cli
+
+## Appendix D: Hybrid Retrieval Lessons (GAM v3a.12)
+
+During development of Git-native Agent Memory (GAM), we discovered critical lessons about hybrid retrieval that apply broadly to FDAA memory systems.
+
+### D.1 The Entity Bootstrap Poisoning Problem
+
+**Naive approach:** Extract "entities" from BM25 hits to anchor query rewrites.
+
+```python
+# BAD: Extracts garbage like "Looking", "Still", "Some"
+caps = re.findall(r'\b[A-Z][a-z]+\b', content)
+```
+
+**Problem:** Sentence starters and common words poison rewrites:
+- "Looking at KPIs" → extracts "Looking" as an entity
+- "Still evaluating..." → "Still" treated as important
+- Rewrites become: "Looking feedback issues" (nonsense)
+
+**Solution: Quality-filtered anchor extraction**
+
+Replace "entity bootstrap" with "anchor extraction":
+
+| Allowed Anchors | Examples |
+|-----------------|----------|
+| Acronyms | NPS, CAC, NRR, ARPA |
+| Product names | TechFlow, DataSync |
+| Dates/deadlines | "Feb 28", "Q1" |
+| Domain keyphrases | "onboarding confusion", "churn risk" |
+
+**Hard filters:**
+- Stopwords + common verbs/adverbs
+- Sentence starters ("Looking", "Still", "Some", "Attended")
+- Anything < 3 characters
+- Anything appearing in > 15% of documents (high DF)
+
+### D.2 Consensus Boost
+
+When a candidate document appears in multiple rewrite result lists (top-10), it's more likely relevant:
+
+```python
+# If candidate appears in 2+ rewrite top-10 lists:
+scores[key] *= 1.15  # Consensus boost
+```
+
+This improves reliability without requiring expensive cross-encoders.
+
+### D.3 Stability Testing Protocol
+
+To prove retrieval improvements are real (not variance):
+
+1. **Pin everything per run:**
+   - Corpus snapshot/version
+   - Needle pack version
+   - Embedding model/version
+   - All hyperparameters (k, caps, weights)
+
+2. **Run 5-seed stability:**
+   - Same benchmark, 5 different random seeds
+   - Report mean Recall@5 and std dev
+   - Target: std dev < 3-5 pts
+
+3. **Per-tier reporting:**
+   - Keep keyword/semantic/intent separate
+   - Improvements shouldn't hide regressions
+
+### D.4 Retrieval Architecture (v3a.12)
+
+```
+Query → Intent Detection → Task Type Classification
+                              ↓
+                    Anchor Extraction (quality-filtered)
+                              ↓
+                    Rewrite Generation (template-based)
+                              ↓
+              ┌───────────────┼───────────────┐
+              ↓               ↓               ↓
+         Baseline         Rewrite 1       Rewrite N
+         (BM25+Vec)       (BM25+Vec)      (BM25+Vec)
+              ↓               ↓               ↓
+              └───────────────┼───────────────┘
+                              ↓
+                    Weighted RRF Fusion (k=15)
+                              ↓
+                    Consensus Boost (2+ lists → 1.15x)
+                              ↓
+                         Final Ranking
+```
+
+### D.5 Key Insight
+
+> "Hybrid retrieval is not just 'vector search'. Controlled rewrite + fusion + gating materially improves intent-tier recall. Common failure mode: naive entity extraction can poison rewrites; anchor quality matters."
+
+This finding validates FDAA's approach of structured, verifiable memory over opaque embeddings.
 
 ---
 
